@@ -24,6 +24,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus.Tests
             _configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json")
+            .AddEnvironmentVariables()
             .Build();
 
             var services = new ServiceCollection();
@@ -73,7 +74,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus.Tests
 
             var msg = new MessageBusMessage();
             msg.AddBody(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new { teste = "teste", numero = 10 }));
-            msg.UserProperties.Add("proptst", "tst");
+            msg.UserProperties.Add("action", "precatorios-ocr");
 
             await client.Send(msg);
 
@@ -81,7 +82,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus.Tests
         }
 
         [Fact]
-        public void SubscriveReceiveMessage()
+        public void SubscriptionReceiveMessage()
         {
             var client = _provider.GetRequiredService<IMessageBusConsumer>();
 

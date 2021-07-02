@@ -1,5 +1,6 @@
-﻿using Azure.Messaging.ServiceBus;
-
+﻿
+using Microsoft.Azure.ServiceBus;
+using Microsoft.Azure.ServiceBus.Core;
 using Microsoft.Extensions.Options;
 
 using System;
@@ -9,35 +10,40 @@ using Up4All.Framework.MessageBus.Abstractions;
 using Up4All.Framework.MessageBus.Abstractions.Enums;
 using Up4All.Framework.MessageBus.Abstractions.Messages;
 using Up4All.Framework.MessageBus.Abstractions.Options;
-using Up4All.Framework.MessageBus.ServiceBus.Consumers;
 
 namespace Up4All.Framework.MessageBus.ServiceBus
 {
-    public class ServiceBusSubscribeClient : MessageBusSubscribeClient, IServiceBusClient, IDisposable
+    public class ServiceBusSubscribeClient : MessageBusSubscribeClient, IServiceBusClient , IDisposable
     {
-        private readonly ServiceBusClient _client;
-        private QueueMessageReceiver _receiver;
+        private readonly IReceiverClient _client;        
 
         public ServiceBusSubscribeClient(IOptions<MessageBusOptions> messageOptions) : base(messageOptions)
         {
-            _client = this.GetConnection(MessageBusOptions);
+            _client = CreateClient();
         }
 
         public override void RegisterHandler(Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
         {
-            _receiver = new QueueMessageReceiver($"{MessageBusOptions.TopicName}/subscriptions/{MessageBusOptions.SubscriptionName}", _client, handler, errorHandler, autoComplete);
-            _receiver.Start().Wait();
+            _client.RegisterHandleMessage(handler, errorHandler, onIdle, autoComplete);
+        }
+
+        public override async Task Close()
+        {
+            await _client.CloseAsync();
         }
 
         public void Dispose()
         {
-            _receiver?.Dispose();
+            Close().Wait();
         }
 
-        public override Task Close()
+        private SubscriptionClient CreateClient()
         {
-            _receiver?.Stop();
-            return Task.CompletedTask;
+            var client = new SubscriptionClient(MessageBusOptions.ConnectionString, MessageBusOptions.TopicName, MessageBusOptions.SubscriptionName, ReceiveMode.PeekLock, RetryPolicy.Default);
+            client.PrefetchCount = 1;
+            return client;
         }
+
+        
     }
 }
