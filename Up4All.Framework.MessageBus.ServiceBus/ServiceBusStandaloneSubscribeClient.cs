@@ -1,7 +1,6 @@
 ﻿
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
-using Microsoft.Extensions.Options;
 
 using System;
 using System.Threading.Tasks;
@@ -9,15 +8,14 @@ using System.Threading.Tasks;
 using Up4All.Framework.MessageBus.Abstractions;
 using Up4All.Framework.MessageBus.Abstractions.Enums;
 using Up4All.Framework.MessageBus.Abstractions.Messages;
-using Up4All.Framework.MessageBus.Abstractions.Options;
 
 namespace Up4All.Framework.MessageBus.ServiceBus
 {
-    public class ServiceBusSubscribeClient : MessageBusSubscribeClient, IServiceBusClient , IDisposable
+    public class ServiceBusStandaloneSubscribeClient : MessageBusStandaloneSubscribeClient, IServiceBusClient , IDisposable
     {
         private readonly IReceiverClient _client;        
 
-        public ServiceBusSubscribeClient(IOptions<MessageBusOptions> messageOptions) : base(messageOptions)
+        public ServiceBusStandaloneSubscribeClient(string connectionString, string topicName, string subscriptionName) : base(connectionString, topicName, subscriptionName)
         {
             _client = CreateClient();
         }
@@ -39,7 +37,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus
 
         private SubscriptionClient CreateClient()
         {
-            var client = new SubscriptionClient(MessageBusOptions.ConnectionString, MessageBusOptions.TopicName, MessageBusOptions.SubscriptionName, ReceiveMode.PeekLock, RetryPolicy.Default);
+            var client = new SubscriptionClient(ConnectionString, TopicName, SubscriptionName, ReceiveMode.PeekLock, RetryPolicy.Default);
             client.PrefetchCount = 1;            
             return client;
         }

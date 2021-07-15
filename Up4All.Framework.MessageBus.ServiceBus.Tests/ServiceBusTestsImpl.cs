@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Up4All.Framework.MessageBus.Abstractions.Configurations;
 using Up4All.Framework.MessageBus.Abstractions.Interfaces;
@@ -32,6 +33,8 @@ namespace Up4All.Framework.MessageBus.ServiceBus.Tests
             services.AddMessageBusQueueClient<ServiceBusQueueClient>(_configuration);
             services.AddMessageBusTopicClient<ServiceBusTopicClient>(_configuration);
             services.AddMessageBusSubscribeClient<ServiceBusSubscribeClient>(_configuration);
+
+            services.AddStandaloneQueueClient((provider) => new ServiceBusStandaloneQueueClient(_configuration.GetValue<string>("MessageBusOptions:ConnectionString"), _configuration.GetValue<string>("MessageBusOptions:QueueName")));
 
             _provider = services.BuildServiceProvider();
         }
@@ -93,6 +96,22 @@ namespace Up4All.Framework.MessageBus.ServiceBus.Tests
             }, (ex) => Debug.Print(ex.Message));
 
             Thread.Sleep(5000);
+        }
+
+        [Fact]
+        public async Task StandaloneQueueSendMessage()
+        {
+            var client = _provider.GetRequiredService<IMessageBusStandaloneQueueClient>();
+
+            var msg = new MessageBusMessage()
+            {
+            };
+            msg.AddBody(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new { teste = "teste", numero = 10 }));
+            msg.UserProperties.Add("proptst", "tst");
+
+            await client.Send(msg);
+
+            Assert.True(true);
         }
     }
 }
