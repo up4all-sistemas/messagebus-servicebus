@@ -50,6 +50,8 @@ namespace Up4All.Framework.MessageBus.ServiceBus
                     throw;
                 }
 
+                onIdle?.Invoke();
+
                 return Task.CompletedTask;
             };
 
