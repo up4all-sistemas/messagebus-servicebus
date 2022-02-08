@@ -1,6 +1,5 @@
 ﻿
-using Microsoft.Azure.ServiceBus;
-using Microsoft.Azure.ServiceBus.Core;
+using Azure.Messaging.ServiceBus;
 
 using System;
 using System.Collections.Generic;
@@ -15,27 +14,37 @@ namespace Up4All.Framework.MessageBus.ServiceBus
 {
     public class ServiceBusStandaloneQueueClient : MessageBusStandaloneQueueClient, IServiceBusClient, IDisposable
     {
-        private readonly QueueClient _client;
+        private readonly ServiceBusClient _client;
+        private readonly ServiceBusSender _queueClient;
+        private readonly string _queueName;
+        private ServiceBusProcessor _processor;
 
         public ServiceBusStandaloneQueueClient(string connectionString, string queuename) : base(connectionString, queuename)
         {
-            _client = CreateClient();
+            _queueName = queuename;
+            (_client, _queueClient) = CreateClient(connectionString, queuename);
         }
 
         public override void RegisterHandler(Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
         {
-            ((IReceiverClient)_client).RegisterHandleMessage(handler, errorHandler, onIdle, autoComplete);
+            _processor = _client.CreateProcessor(_queueName, new ServiceBusProcessorOptions
+            {
+                AutoCompleteMessages = autoComplete
+            });
+
+            _processor.RegisterHandleMessage(handler, errorHandler, onIdle, autoComplete);
+            _processor.StartProcessingAsync().Wait();
         }
 
         public override async Task Send(MessageBusMessage message)
         {
-            await _client.SendAsync(this.PrepareMesssage(message));
+            await _queueClient.SendMessageAsync(this.PrepareMesssage(message));
         }
 
         public override async Task Send(IEnumerable<MessageBusMessage> messages)
         {
             var sbMessages = messages.Select(x => this.PrepareMesssage(x));
-            await _client.SendAsync(sbMessages.ToList());
+            await _queueClient.SendMessagesAsync(sbMessages.ToList());
         }
 
         public void Dispose()
@@ -45,14 +54,16 @@ namespace Up4All.Framework.MessageBus.ServiceBus
 
         public override async Task Close()
         {
-            await _client?.CloseAsync();
+            await _processor?.CloseAsync();
+            await _queueClient?.CloseAsync();
+            await _queueClient?.DisposeAsync().AsTask();
         }
 
-        private QueueClient CreateClient()
+        private (ServiceBusClient, ServiceBusSender) CreateClient(string connectionString, string queueName)
         {
-            var client = new QueueClient(ConnectionString, QueueName, ReceiveMode.PeekLock, RetryPolicy.Default);
-            client.PrefetchCount = 1;
-            return client;
+            var client = new ServiceBusClient(connectionString);
+            var queueClient = client.CreateSender(queueName);
+            return (client, queueClient);
         }
 
 

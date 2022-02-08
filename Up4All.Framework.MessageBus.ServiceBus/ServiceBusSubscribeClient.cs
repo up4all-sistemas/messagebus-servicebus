@@ -1,9 +1,10 @@
 ﻿
-using Microsoft.Azure.ServiceBus;
-using Microsoft.Azure.ServiceBus.Core;
+using Azure.Messaging.ServiceBus;
+
 using Microsoft.Extensions.Options;
 
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 using Up4All.Framework.MessageBus.Abstractions;
@@ -15,21 +16,31 @@ namespace Up4All.Framework.MessageBus.ServiceBus
 {
     public class ServiceBusSubscribeClient : MessageBusSubscribeClient, IServiceBusClient , IDisposable
     {
-        private readonly IReceiverClient _client;        
+        private readonly ServiceBusClient _client;
+        private readonly MessageBusOptions _opts;
+        private ServiceBusProcessor _processor;
 
         public ServiceBusSubscribeClient(IOptions<MessageBusOptions> messageOptions) : base(messageOptions)
         {
-            _client = CreateClient();
+            _opts = messageOptions.Value;
+            _client = CreateClient(messageOptions.Value);
         }
 
         public override void RegisterHandler(Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
         {
-            _client.RegisterHandleMessage(handler, errorHandler, onIdle, autoComplete);
+            _processor = _client.CreateProcessor(_opts.TopicName, _opts.SubscriptionName, new ServiceBusProcessorOptions
+            {
+                AutoCompleteMessages = autoComplete
+            });
+
+            _processor.RegisterHandleMessage(handler, errorHandler, onIdle, autoComplete);
+            _processor.StartProcessingAsync().Wait();
         }
 
         public override async Task Close()
         {
-            await _client.CloseAsync();
+            await _processor?.CloseAsync();            
+            await _client?.DisposeAsync().AsTask();
         }
 
         public void Dispose()
@@ -37,11 +48,9 @@ namespace Up4All.Framework.MessageBus.ServiceBus
             Close().Wait();
         }
 
-        private SubscriptionClient CreateClient()
+        private ServiceBusClient CreateClient(MessageBusOptions opts)
         {
-            var client = new SubscriptionClient(MessageBusOptions.ConnectionString, MessageBusOptions.TopicName, MessageBusOptions.SubscriptionName, ReceiveMode.PeekLock, RetryPolicy.Default);
-            client.PrefetchCount = 1;            
-            return client;
+            return new ServiceBusClient(opts.ConnectionString);
         }
 
         

@@ -1,5 +1,6 @@
 ﻿
-using Microsoft.Azure.ServiceBus;
+using Azure.Messaging.ServiceBus;
+
 using Microsoft.Extensions.Options;
 
 using System.Collections.Generic;
@@ -13,29 +14,30 @@ using Up4All.Framework.MessageBus.Abstractions.Options;
 namespace Up4All.Framework.MessageBus.ServiceBus
 {
     public class ServiceBusTopicClient : MessageBusTopicClient, IServiceBusClient
-    {
-        private readonly TopicClient _client;
+    {        
+        private readonly ServiceBusSender _topicClient;
 
         public ServiceBusTopicClient(IOptions<MessageBusOptions> messageOptions) : base(messageOptions)
         {
-            _client = CreateClient();
+            _topicClient = CreateClient(messageOptions.Value);
         }
 
         public override async Task Send(MessageBusMessage message)
         {
-            await _client.SendAsync(this.PrepareMesssage(message));
+            await _topicClient.SendMessageAsync(this.PrepareMesssage(message));
         }
 
         public override async Task Send(IEnumerable<MessageBusMessage> messages)
         {
             var sbMessages = messages.Select(x => this.PrepareMesssage(x));
-            await _client.SendAsync(sbMessages.ToList());
+            await _topicClient.SendMessagesAsync(sbMessages.ToList());
         }
 
-        private TopicClient CreateClient()
+        private ServiceBusSender CreateClient(MessageBusOptions opts)
         {
-            var client = new TopicClient(MessageBusOptions.ConnectionString, MessageBusOptions.TopicName, RetryPolicy.Default);
-            return client;
+            var client = new ServiceBusClient(opts.ConnectionString);
+            var topicClient = client.CreateSender(opts.TopicName);
+            return topicClient;
         }
     }
 }

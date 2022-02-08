@@ -77,7 +77,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus.Tests
 
             var msg = new MessageBusMessage();
             msg.AddBody(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new { teste = "teste", numero = 10 }));
-            msg.UserProperties.Add("action", "precatorios-ocr");
+            msg.UserProperties.Add("action", "dev-sub-test");
 
             await client.Send(msg);
 
