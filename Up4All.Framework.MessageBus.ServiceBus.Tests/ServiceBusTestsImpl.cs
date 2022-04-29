@@ -34,7 +34,8 @@ namespace Up4All.Framework.MessageBus.ServiceBus.Tests
             services.AddMessageBusTopicClient<ServiceBusTopicClient>(_configuration);
             services.AddMessageBusSubscribeClient<ServiceBusSubscribeClient>(_configuration);
 
-            services.AddStandaloneQueueClient((provider) => new ServiceBusStandaloneQueueClient(_configuration.GetValue<string>("MessageBusOptions:ConnectionString"), _configuration.GetValue<string>("MessageBusOptions:QueueName")));
+            services.AddStandaloneQueueClient((provider) => new ServiceBusStandaloneQueueClient(_configuration.GetValue<string>("MessageBusOptions:ConnectionString"), _configuration.GetValue<string>("MessageBusOptions:QueueName")
+                , _configuration.GetValue<int>("MessageBusOptions:ConnectionAttempts")));
 
             _provider = services.BuildServiceProvider();
         }

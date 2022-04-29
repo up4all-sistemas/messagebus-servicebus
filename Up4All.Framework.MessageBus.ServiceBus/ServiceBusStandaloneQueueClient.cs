@@ -19,10 +19,10 @@ namespace Up4All.Framework.MessageBus.ServiceBus
         private readonly string _queueName;
         private ServiceBusProcessor _processor;
 
-        public ServiceBusStandaloneQueueClient(string connectionString, string queuename) : base(connectionString, queuename)
+        public ServiceBusStandaloneQueueClient(string connectionString, string queuename, int connectionAttemps = 8) : base(connectionString, queuename)
         {
             _queueName = queuename;
-            (_client, _queueClient) = CreateClient(connectionString, queuename);
+            (_client, _queueClient) = this.CreateClient(connectionString, queuename, connectionAttemps);
         }
 
         public override void RegisterHandler(Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
@@ -58,14 +58,6 @@ namespace Up4All.Framework.MessageBus.ServiceBus
             await _queueClient?.CloseAsync();
             await _queueClient?.DisposeAsync().AsTask();
         }
-
-        private (ServiceBusClient, ServiceBusSender) CreateClient(string connectionString, string queueName)
-        {
-            var client = new ServiceBusClient(connectionString);
-            var queueClient = client.CreateSender(queueName);
-            return (client, queueClient);
-        }
-
 
     }
 }

@@ -25,7 +25,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus
         public ServiceBusQueueClient(IOptions<MessageBusOptions> messageOptions) : base(messageOptions)
         {
             _opts = messageOptions.Value;
-            (_client, _queueClient) = CreateClient(messageOptions.Value);
+            (_client, _queueClient) = this.CreateClient(messageOptions.Value);
         }
 
         public override void RegisterHandler(Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
@@ -61,14 +61,6 @@ namespace Up4All.Framework.MessageBus.ServiceBus
             await _queueClient?.CloseAsync();
             await _client?.DisposeAsync().AsTask();
         }
-
-        private (ServiceBusClient, ServiceBusSender) CreateClient(MessageBusOptions opts)
-        {
-            var client = new ServiceBusClient(opts.ConnectionString);
-            var queueClient = client.CreateSender(opts.QueueName);
-            return (client, queueClient);
-        }
-
 
     }
 }

@@ -23,7 +23,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus
         public ServiceBusSubscribeClient(IOptions<MessageBusOptions> messageOptions) : base(messageOptions)
         {
             _opts = messageOptions.Value;
-            _client = CreateClient(messageOptions.Value);
+            _client = this.CreateClient(messageOptions.Value.ConnectionString, messageOptions.Value.ConnectionAttempts);
         }
 
         public override void RegisterHandler(Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
@@ -46,11 +46,6 @@ namespace Up4All.Framework.MessageBus.ServiceBus
         public void Dispose()
         {
             Close().Wait();
-        }
-
-        private ServiceBusClient CreateClient(MessageBusOptions opts)
-        {
-            return new ServiceBusClient(opts.ConnectionString);
         }
 
         

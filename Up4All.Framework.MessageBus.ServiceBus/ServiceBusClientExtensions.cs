@@ -1,17 +1,75 @@
 ﻿
 using Azure.Messaging.ServiceBus;
 
+using Microsoft.Extensions.Logging;
+
+using Polly;
+
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 
 using Up4All.Framework.MessageBus.Abstractions.Enums;
 using Up4All.Framework.MessageBus.Abstractions.Messages;
+using Up4All.Framework.MessageBus.Abstractions.Options;
 
 namespace Up4All.Framework.MessageBus.ServiceBus
 {
     public static class ServiceBusClientExtensions
     {
+
+        public static (ServiceBusClient, ServiceBusSender) CreateClient(this IServiceBusClient sbclient, MessageBusOptions opts)
+        {
+            return CreateClient(sbclient, opts.ConnectionString, opts.QueueName, opts.ConnectionAttempts);
+        }
+
+        public static (ServiceBusClient, ServiceBusSender) CreateClient(this IServiceBusClient sbclient, string connectionString, string queueName, int attempts)
+        {
+            var logger = CreateLogger<IServiceBusClient>();
+
+            var result = Policy
+                .Handle<Exception>()
+                .WaitAndRetry(attempts, retryAttempt =>
+                {
+                    TimeSpan wait = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                    logger.LogInformation($"Failed to create connect in ServiceBus server, retrying in {wait}");
+                    return wait;
+                })
+                .ExecuteAndCapture(() =>
+                {
+                    logger.LogDebug($"Creating connection to ServiceBus server");
+                    var client = new ServiceBusClient(connectionString);
+                    var queueClient = client.CreateSender(queueName);
+                    return (client, queueClient);
+                });
+
+            if (result.Outcome == OutcomeType.Successful)
+                return result.Result;
+
+            throw result.FinalException;
+        }
+
+        public static ServiceBusClient CreateClient(this IServiceBusClient sbclient, string connectionString, int attempts)
+        {
+            var logger = CreateLogger<IServiceBusClient>();
+
+            var result = Policy
+                .Handle<Exception>()
+                .WaitAndRetry(attempts, retryAttempt =>
+                {
+                    TimeSpan wait = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                    return wait;
+                })
+                .ExecuteAndCapture(() =>
+                {
+                    return new ServiceBusClient(connectionString);
+                });
+
+            if (result.Outcome == OutcomeType.Successful)
+                return result.Result;
+
+            throw result.FinalException;
+        }
 
         public static ServiceBusMessage PrepareMesssage(this IServiceBusClient client, MessageBusMessage message)
         {
@@ -59,6 +117,13 @@ namespace Up4All.Framework.MessageBus.ServiceBus
                 errorHandler(ex.Exception);
                 return Task.CompletedTask;
             };
+        }
+
+        private static ILogger<T> CreateLogger<T>()
+        {
+            return LoggerFactory
+                    .Create(cfg => { })
+                    .CreateLogger<T>();
         }
     }
 

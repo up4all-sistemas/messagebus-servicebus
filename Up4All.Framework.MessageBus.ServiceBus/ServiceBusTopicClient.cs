@@ -14,12 +14,13 @@ using Up4All.Framework.MessageBus.Abstractions.Options;
 namespace Up4All.Framework.MessageBus.ServiceBus
 {
     public class ServiceBusTopicClient : MessageBusTopicClient, IServiceBusClient
-    {        
+    {
+        private readonly ServiceBusClient _client;
         private readonly ServiceBusSender _topicClient;
 
         public ServiceBusTopicClient(IOptions<MessageBusOptions> messageOptions) : base(messageOptions)
         {
-            _topicClient = CreateClient(messageOptions.Value);
+            (_client, _topicClient) = this.CreateClient(messageOptions.Value);
         }
 
         public override async Task Send(MessageBusMessage message)
@@ -31,13 +32,6 @@ namespace Up4All.Framework.MessageBus.ServiceBus
         {
             var sbMessages = messages.Select(x => this.PrepareMesssage(x));
             await _topicClient.SendMessagesAsync(sbMessages.ToList());
-        }
-
-        private ServiceBusSender CreateClient(MessageBusOptions opts)
-        {
-            var client = new ServiceBusClient(opts.ConnectionString);
-            var topicClient = client.CreateSender(opts.TopicName);
-            return topicClient;
         }
     }
 }

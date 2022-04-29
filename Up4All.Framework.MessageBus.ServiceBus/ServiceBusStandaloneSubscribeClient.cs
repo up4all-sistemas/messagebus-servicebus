@@ -18,11 +18,11 @@ namespace Up4All.Framework.MessageBus.ServiceBus
         private readonly string _subscriptionName;
         private ServiceBusProcessor _processor;
 
-        public ServiceBusStandaloneSubscribeClient(string connectionString, string topicName, string subscriptionName) : base(connectionString, topicName, subscriptionName)
+        public ServiceBusStandaloneSubscribeClient(string connectionString, string topicName, string subscriptionName, int connectionAttempts = 8) : base(connectionString, topicName, subscriptionName)
         {
             _topicName = topicName;
             _subscriptionName = subscriptionName;
-            _client = CreateClient(connectionString);
+            _client = this.CreateClient(connectionString, connectionAttempts);
         }
 
         public override void RegisterHandler(Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
@@ -47,10 +47,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus
             Close().Wait();
         }
 
-        private ServiceBusClient CreateClient(string connectionString)
-        {
-            return new ServiceBusClient(connectionString);
-        }
+        
 
 
     }
