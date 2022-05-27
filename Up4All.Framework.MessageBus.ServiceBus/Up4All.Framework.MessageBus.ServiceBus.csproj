@@ -13,10 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.7.0" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.8.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
     <PackageReference Include="Polly" Version="7.2.3" />
-    <PackageReference Include="Up4All.Framework.MessageBus.Abstractions" Version="1.0.18" />
+    <PackageReference Include="Up4All.Framework.MessageBus.Abstractions" Version="1.0.19" />
   </ItemGroup>
 
   <ItemGroup>

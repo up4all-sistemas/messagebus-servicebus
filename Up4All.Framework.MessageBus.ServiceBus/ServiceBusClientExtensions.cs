@@ -78,6 +78,9 @@ namespace Up4All.Framework.MessageBus.ServiceBus
                 foreach (var prop in message.UserProperties)
                     sbMessage.ApplicationProperties.Add(prop.Key, prop.Value);
 
+            if (message.IsJson)
+                sbMessage.ContentType = "application/json";
+
             return sbMessage;
         }
 
@@ -86,7 +89,11 @@ namespace Up4All.Framework.MessageBus.ServiceBus
             client.ProcessMessageAsync += (arg) =>
             {
                 var received = new ReceivedMessage();
-                received.AddBody(arg.Message.Body);
+
+                if (arg.Message.ContentType == "application/json")
+                    received.AddBody(arg.Message.Body.ToString());
+                else
+                    received.AddBody(arg.Message.Body.ToArray());
 
                 if (arg.Message.ApplicationProperties.Any())
                     received.AddUserProperties(arg.Message.ApplicationProperties.ToDictionary(x => x.Key, x => x.Value));
@@ -113,7 +120,8 @@ namespace Up4All.Framework.MessageBus.ServiceBus
                 return Task.CompletedTask;
             };
 
-            client.ProcessErrorAsync += (ex) => {
+            client.ProcessErrorAsync += (ex) =>
+            {
                 errorHandler(ex.Exception);
                 return Task.CompletedTask;
             };
