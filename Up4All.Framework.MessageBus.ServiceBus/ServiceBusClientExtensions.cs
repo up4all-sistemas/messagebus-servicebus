@@ -91,7 +91,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus
                 var received = new ReceivedMessage();
 
                 if (arg.Message.ContentType == "application/json")
-                    received.AddBody(arg.Message.Body.ToString());
+                    received.AddBody(arg.Message.Body, true);
                 else
                     received.AddBody(arg.Message.Body.ToArray());
 
