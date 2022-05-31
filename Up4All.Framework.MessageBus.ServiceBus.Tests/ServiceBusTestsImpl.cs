@@ -28,6 +28,8 @@ namespace Up4All.Framework.MessageBus.ServiceBus.Tests
             .AddEnvironmentVariables()
             .Build();
 
+
+
             var services = new ServiceCollection();
 
             services.AddMessageBusQueueClient<ServiceBusQueueClient>(_configuration);

@@ -1,14 +1,7 @@
 {
   "profiles": {
     "Up4All.Framework.MessageBus.ServiceBus.Tests": {
-      "commandName": "Project",
-      "environmentVariables": {
-        "MessageBusOptions:TopicName": "precatorios",
-        "MessageBusOptions:ConnectionString": "Endpoint=sb://dandrade.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=XnjqcXppvURT0Vcra+Z6E9/tQ4C3F3pixQL8WqZV0vc=",
-        "MessageBusOptions:SubscriptionName": "precatorios-ocr",
-        "MessageBusOptions:QueueName": "test-queue",
-        "NETCORE_ENVIRONMENT": "Development"
-      }
+      "commandName": "Project"
     }
   }
 }
