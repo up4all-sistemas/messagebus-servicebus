@@ -8,7 +8,7 @@ using Up4All.Framework.MessageBus.Abstractions.Mocks;
 
 namespace Up4All.Framework.MessageBus.ServiceBus
 {
-    public class ServiceBusStandaloneTopicClientMocked : MessageBusTopicClientMock, IMessageBusStandalonePublisher, IServiceBusClient
+    public class ServiceBusStandaloneTopicClientMocked : MessageBusStandaloneTopicClientMock, IMessageBusStandalonePublisher, IServiceBusClient
     {
         public ServiceBusStandaloneTopicClientMocked() : base()
         {
