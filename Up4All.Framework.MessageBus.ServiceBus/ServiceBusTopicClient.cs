@@ -20,7 +20,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus
 
         public ServiceBusTopicClient(IOptions<MessageBusOptions> messageOptions) : base(messageOptions)
         {
-            (_client, _topicClient) = this.CreateClient(messageOptions.Value);
+            (_client, _topicClient) = this.CreateClient(messageOptions.Value, true);
         }
 
         public override async Task Send(MessageBusMessage message)

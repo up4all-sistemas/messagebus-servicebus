@@ -18,12 +18,17 @@ namespace Up4All.Framework.MessageBus.ServiceBus
     public static class ServiceBusClientExtensions
     {
 
-        public static (ServiceBusClient, ServiceBusSender) CreateClient(this IServiceBusClient sbclient, MessageBusOptions opts)
+        public static (ServiceBusClient, ServiceBusSender) CreateClient(this IServiceBusClient sbclient, MessageBusOptions opts, bool isTopicClient = false)
         {
-            return CreateClient(sbclient, opts.ConnectionString, opts.QueueName, opts.ConnectionAttempts);
+            var entitypath = opts.QueueName;
+
+            if (isTopicClient)
+                entitypath = opts.TopicName;
+
+            return CreateClient(sbclient, opts.ConnectionString, entitypath, opts.ConnectionAttempts);
         }
 
-        public static (ServiceBusClient, ServiceBusSender) CreateClient(this IServiceBusClient sbclient, string connectionString, string queueName, int attempts)
+        public static (ServiceBusClient, ServiceBusSender) CreateClient(this IServiceBusClient sbclient, string connectionString, string entityName, int attempts)
         {
             var logger = CreateLogger<IServiceBusClient>();
 
@@ -39,7 +44,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus
                 {
                     logger.LogDebug($"Creating connection to ServiceBus server");
                     var client = new ServiceBusClient(connectionString);
-                    var queueClient = client.CreateSender(queueName);
+                    var queueClient = client.CreateSender(entityName);
                     return (client, queueClient);
                 });
 
