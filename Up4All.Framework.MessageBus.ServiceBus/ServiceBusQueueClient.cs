@@ -28,15 +28,26 @@ namespace Up4All.Framework.MessageBus.ServiceBus
             (_client, _queueClient) = this.CreateClient(messageOptions.Value);
         }
 
+        public override async Task RegisterHandlerAsync(Func<ReceivedMessage, Task<MessageReceivedStatusEnum>> handler, Func<Exception, Task> errorHandler, Func<Task> onIdle = null, bool autoComplete = false)
+        {
+            _processor = CreateProcessor(autoComplete);
+            await _processor.RegisterHandleMessageAsync(handler, errorHandler, onIdle, autoComplete);
+            await _processor.StartProcessingAsync();
+        }
+
         public override void RegisterHandler(Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
         {
-            _processor = _client.CreateProcessor(_opts.QueueName, new ServiceBusProcessorOptions
+            _processor = CreateProcessor(autoComplete);
+            _processor.RegisterHandleMessage(handler, errorHandler, onIdle, autoComplete);
+            _processor.StartProcessingAsync().Wait();
+        }
+
+        private ServiceBusProcessor CreateProcessor(bool autoComplete)
+        {
+            return _client.CreateProcessor(_opts.QueueName, new ServiceBusProcessorOptions
             {
                 AutoCompleteMessages = autoComplete
             });
-
-            _processor.RegisterHandleMessage(handler, errorHandler, onIdle, autoComplete);
-            _processor.StartProcessingAsync().Wait();
         }
 
         public override async Task Send(MessageBusMessage message)

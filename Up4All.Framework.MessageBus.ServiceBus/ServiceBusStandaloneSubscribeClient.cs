@@ -11,12 +11,19 @@ using Up4All.Framework.MessageBus.Abstractions.Messages;
 
 namespace Up4All.Framework.MessageBus.ServiceBus
 {
-    public class ServiceBusStandaloneSubscribeClient : MessageBusStandaloneSubscribeClient, IServiceBusClient , IDisposable
+    public class ServiceBusStandaloneSubscribeClient : MessageBusStandaloneSubscribeClient, IServiceBusClient, IDisposable
     {
         private readonly ServiceBusClient _client;
         private readonly string _topicName;
         private readonly string _subscriptionName;
         private ServiceBusProcessor _processor;
+
+        public override async Task RegisterHandlerAsync(Func<ReceivedMessage, Task<MessageReceivedStatusEnum>> handler, Func<Exception, Task> errorHandler, Func<Task> onIdle = null, bool autoComplete = false)
+        {
+            _processor = CreateProcessor(autoComplete);
+            await _processor.RegisterHandleMessageAsync(handler, errorHandler, onIdle, autoComplete);
+            await _processor.StartProcessingAsync();
+        }
 
         public ServiceBusStandaloneSubscribeClient(string connectionString, string topicName, string subscriptionName, int connectionAttempts = 8) : base(connectionString, topicName, subscriptionName)
         {
@@ -27,13 +34,17 @@ namespace Up4All.Framework.MessageBus.ServiceBus
 
         public override void RegisterHandler(Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
         {
-            _processor = _client.CreateProcessor(_topicName, _subscriptionName, new ServiceBusProcessorOptions
+            _processor = CreateProcessor(autoComplete);
+            _processor.RegisterHandleMessage(handler, errorHandler, onIdle, autoComplete);
+            _processor.StartProcessingAsync().Wait();
+        }
+
+        private ServiceBusProcessor CreateProcessor(bool autoComplete)
+        {
+            return _client.CreateProcessor(_topicName, _subscriptionName, new ServiceBusProcessorOptions
             {
                 AutoCompleteMessages = autoComplete
             });
-
-            _processor.RegisterHandleMessage(handler, errorHandler, onIdle, autoComplete);
-            _processor.StartProcessingAsync().Wait();
         }
 
         public override async Task Close()
@@ -47,7 +58,7 @@ namespace Up4All.Framework.MessageBus.ServiceBus
             Close().Wait();
         }
 
-        
+
 
 
     }

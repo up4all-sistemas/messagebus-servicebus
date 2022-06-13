@@ -89,9 +89,9 @@ namespace Up4All.Framework.MessageBus.ServiceBus
             return sbMessage;
         }
 
-        public static void RegisterHandleMessage(this ServiceBusProcessor client, Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
+        public static Task RegisterHandleMessageAsync(this ServiceBusProcessor client, Func<ReceivedMessage, Task<MessageReceivedStatusEnum>> handler, Func<Exception,Task> errorHandler, Func<Task> onIdle = null, bool autoComplete = false)
         {
-            client.ProcessMessageAsync += (arg) =>
+            client.ProcessMessageAsync += async (arg) =>
             {
                 var received = new ReceivedMessage();
 
@@ -105,31 +105,46 @@ namespace Up4All.Framework.MessageBus.ServiceBus
 
                 try
                 {
-                    var result = handler(received);
+                    var result = await handler(received);
 
                     if (result == MessageReceivedStatusEnum.Deadletter)
-                        arg.DeadLetterMessageAsync(arg.Message).Wait();
+                        await arg.DeadLetterMessageAsync(arg.Message);
                     else if (result == MessageReceivedStatusEnum.Abandoned)
-                        arg.AbandonMessageAsync(arg.Message).Wait();
+                        await arg.AbandonMessageAsync(arg.Message);
 
-                    if (!autoComplete) arg.CompleteMessageAsync(arg.Message).Wait();
+                    if (!autoComplete) await arg.CompleteMessageAsync(arg.Message);
                 }
                 catch (Exception)
                 {
-                    arg.AbandonMessageAsync(arg.Message).Wait();
+                    await arg.AbandonMessageAsync(arg.Message);
                     throw;
                 }
 
-                onIdle?.Invoke();
-
-                return Task.CompletedTask;
+                await onIdle?.Invoke();
             };
 
-            client.ProcessErrorAsync += (ex) =>
+            client.ProcessErrorAsync += async (ex) =>
             {
-                errorHandler(ex.Exception);
-                return Task.CompletedTask;
+                await errorHandler(ex.Exception);                
             };
+
+            return Task.CompletedTask;
+        }
+
+        public static void RegisterHandleMessage(this ServiceBusProcessor client, Func<ReceivedMessage, MessageReceivedStatusEnum> handler, Action<Exception> errorHandler, Action onIdle = null, bool autoComplete = false)
+        {
+            client.RegisterHandleMessageAsync((msg) =>
+            {
+                return Task.FromResult(handler(msg));
+            }, (ex) =>
+            {
+                errorHandler.Invoke(ex);
+                return Task.CompletedTask;
+            }, () =>
+            {
+                onIdle.Invoke();
+                return Task.CompletedTask;
+            }, autoComplete);
         }
 
         private static ILogger<T> CreateLogger<T>()
